@@ -55,6 +55,14 @@ function createSupabaseClient() {
   });
 }
 
+// True when the app can actually reach Supabase — checked without throwing, so callers
+// that don't strictly need Supabase (building/watching an unsaved lesson) can skip it
+// entirely instead of crashing. Only auth/library/save/share features need this.
+export const isSupabaseConfigured = Boolean(
+  (import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL']) &&
+    (import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY']),
+);
+
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
 // Import the supabase client like this:

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isSupabaseConfigured } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthContextValue {
@@ -12,14 +12,19 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children, onSignOut }: { children: ReactNode; onSignOut?: () => Promise<void> }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
     let mounted = true;
     supabase.auth
       .getUser()
       .then(({ data }) => {
         if (mounted) setUser(data.user);
+      })
+      .catch(() => {
+        if (mounted) setUser(null);
       })
       .finally(() => {
         if (mounted) setIsLoading(false);
@@ -41,7 +46,7 @@ export function AuthProvider({ children, onSignOut }: { children: ReactNode; onS
 
   const signOut = useCallback(async () => {
     await onSignOut?.();
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured) await supabase.auth.signOut().catch(() => {});
     setUser(null);
   }, [onSignOut]);
 
