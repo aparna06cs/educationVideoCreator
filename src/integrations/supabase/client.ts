@@ -27,11 +27,22 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 
+// Publishable-by-design values (not secrets — same idea as a Stripe publishable key).
+// Cloudflare Workers Builds regenerates wrangler.json fresh on every build with no
+// `vars` section, which has been observed wiping dashboard-set plaintext variables
+// between deploys. These two are safe to ship as a fallback so the client never
+// hard-crashes on that platform flakiness; env vars still win when present.
+const FALLBACK_SUPABASE_URL = 'https://dxhxcryhvexunelszovg.supabase.co';
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ePm9INub8Lx1lkqVaifKrw_oWGSTAWu';
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+  // Fall back to process.env for SSR (server-side rendering), then to the known-public values.
+  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] || FALLBACK_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY =
+    import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    process.env['SUPABASE_PUBLISHABLE_KEY'] ||
+    FALLBACK_SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
@@ -55,13 +66,10 @@ function createSupabaseClient() {
   });
 }
 
-// True when the app can actually reach Supabase — checked without throwing, so callers
-// that don't strictly need Supabase (building/watching an unsaved lesson) can skip it
-// entirely instead of crashing. Only auth/library/save/share features need this.
-export const isSupabaseConfigured = Boolean(
-  (import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL']) &&
-    (import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY']),
-);
+// Always true now that createSupabaseClient() has a known-public fallback — kept as an
+// explicit flag (rather than inlining `true`) so auth-context.tsx and the /_authenticated
+// route stay defensive if the fallback is ever removed.
+export const isSupabaseConfigured = true;
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
