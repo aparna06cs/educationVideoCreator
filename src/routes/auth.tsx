@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Mail, Lock, Sparkles, Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { describeError } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -51,7 +52,7 @@ function AuthPage() {
         navigate({ to: "/" });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(describeError(err, "Something went wrong."));
     } finally {
       setBusy(false);
     }
@@ -69,7 +70,7 @@ function AuthPage() {
         navigate({ to: "/" });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google sign-in failed.");
+      setError(describeError(err, "Google sign-in failed."));
       setBusy(false);
     }
   }

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, Loader2, Mail, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { describeError } from "@/lib/utils";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -44,7 +45,7 @@ function ResetPasswordPage() {
       if (err) throw err;
       setMessage("If this email is registered, you will receive a reset link.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed.");
+      setError(describeError(err, "Request failed."));
     } finally {
       setBusy(false);
     }
@@ -60,7 +61,7 @@ function ResetPasswordPage() {
       if (err) throw err;
       setMessage("Password updated. You can now sign in with your new password.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed.");
+      setError(describeError(err, "Update failed."));
     } finally {
       setBusy(false);
     }
