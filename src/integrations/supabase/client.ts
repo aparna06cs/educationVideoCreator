@@ -32,8 +32,8 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 // `vars` section, which has been observed wiping dashboard-set plaintext variables
 // between deploys. These two are safe to ship as a fallback so the client never
 // hard-crashes on that platform flakiness; env vars still win when present.
-const FALLBACK_SUPABASE_URL = 'https://dxhxcryhvexunelszovg.supabase.co';
-const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ePm9INub8Lx1lkqVaifKrw_oWGSTAWu';
+const FALLBACK_SUPABASE_URL = 'https://psmzthcmhdhnoistyxit.supabase.co';
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ynpC2P1oT5Ia36Abi6u4wA_SHZIPwO1';
 
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
