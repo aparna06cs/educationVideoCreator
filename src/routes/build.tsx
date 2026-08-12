@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { AlertCircle, Check, ImageIcon, Loader2, Mic, PenLine } from "lucide-react";
+import { AlertCircle, Check, FileText, ImageIcon, Loader2, Mic, PenLine } from "lucide-react";
 import { useBuildState } from "@/lib/lesson-store";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +67,15 @@ function BuildPage() {
 
   return (
     <main className="paper-grain min-h-screen">
+      <header className="border-b border-border">
+        <div className="mx-auto flex max-w-4xl items-center px-6 py-4">
+          <Link to="/" className="flex items-center gap-2 font-display text-lg">
+            <FileText className="size-5 text-primary" />
+            LessonReel
+          </Link>
+        </div>
+      </header>
+
       <div className="mx-auto w-full max-w-4xl px-6 py-16">
         {state.totalParts > 1 && (
           <p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase">
