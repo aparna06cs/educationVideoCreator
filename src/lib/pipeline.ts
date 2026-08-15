@@ -74,7 +74,10 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
     message: partLabel ? `Illustrating and narrating ${partLabel}…` : "Illustrating scenes and recording narration…",
   });
 
-  const illustrate = mapWithConcurrency(scenes, 3, async (scene) => {
+  // Pollinations is free and unauthenticated — bursts of concurrent requests from
+  // Cloudflare's shared egress IPs appear to get rate-limited even though a single
+  // isolated request succeeds reliably. Serialize illustration calls to avoid that.
+  const illustrate = mapWithConcurrency(scenes, 1, async (scene) => {
     try {
       const res = await fetch("/api/illustrate", {
         method: "POST",
