@@ -95,7 +95,9 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
     }
   });
 
-  const narrate = mapWithConcurrency(scenes, 3, async (scene) => {
+  // Same rate-limiting risk as illustration above — StreamElements is also free
+  // and unauthenticated. Serialize these too.
+  const narrate = mapWithConcurrency(scenes, 1, async (scene) => {
     try {
       const res = await fetch("/api/narrate", {
         method: "POST",
