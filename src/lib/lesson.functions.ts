@@ -61,7 +61,12 @@ type GatewayLesson = {
   scenes?: GatewayScene[];
 };
 
-async function groqComplete(apiKey: string, prompt: string): Promise<string> {
+// Groq's free plan caps openai/gpt-oss-120b at 8,000 tokens/minute — input + output
+// combined, shared across every call to this model in the account. scriptLesson,
+// classifyContent and segmentTopics all run within the same build, often the same
+// minute, so each one's budget (content slice + maxTokens) must be sized so the sum
+// of any two back-to-back calls stays comfortably under 8K, not just each in isolation.
+async function groqComplete(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -80,7 +85,7 @@ async function groqComplete(apiKey: string, prompt: string): Promise<string> {
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 4000,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -104,7 +109,7 @@ export const scriptLesson = createServerFn({ method: "POST" })
     const sourceBlock =
       data.sourceKind === "topic"
         ? `The educator gave only a topic: "${data.content}". Build the lesson from well-established knowledge about it.`
-        : `Source material (from "${data.sourceLabel}"):\n"""\n${data.content.slice(0, 45000)}\n"""`;
+        : `Source material (from "${data.sourceLabel}"):\n"""\n${data.content.slice(0, 5000)}\n"""`;
 
     const prompt = `You are a lesson director turning study material into a narrated video lesson.
 
@@ -131,7 +136,7 @@ Stay strictly faithful to the source material. Do not invent facts that contradi
 Respond with a single JSON object matching exactly this schema (no extra keys, no markdown fences):
 ${JSON.stringify(lessonSchema)}`;
 
-    const raw = await groqComplete(apiKey, prompt);
+    const raw = await groqComplete(apiKey, prompt, 2600);
 
     let parsed: GatewayLesson;
     try {
@@ -178,7 +183,7 @@ export const classifyContent = createServerFn({ method: "POST" })
     const apiKey = process.env["GROQ_API_KEY"];
     if (!apiKey) return { isEducational: true, reason: "" };
 
-    const sample = data.sourceKind === "topic" ? `Topic given: "${data.content}"` : `Material:\n"""\n${data.content.slice(0, 8000)}\n"""`;
+    const sample = data.sourceKind === "topic" ? `Topic given: "${data.content}"` : `Material:\n"""\n${data.content.slice(0, 1200)}\n"""`;
 
     const prompt = `Decide whether the following is educational / study material suitable for a learning video lesson — for example textbook excerpts, lecture notes, course material, explanatory or reference articles, or a well-defined academic/technical/professional topic.
 
@@ -190,7 +195,7 @@ Respond with a single JSON object: { "isEducational": boolean, "reason": string 
 "reason" is only needed when isEducational is false — one short sentence, at most 20 words, explaining why. Leave it empty otherwise.`;
 
     try {
-      const raw = await groqComplete(apiKey, prompt);
+      const raw = await groqComplete(apiKey, prompt, 80);
       const parsed = JSON.parse(raw) as { isEducational?: boolean; reason?: string };
       return {
         isEducational: parsed.isEducational !== false,
@@ -217,7 +222,7 @@ export const segmentTopics = createServerFn({ method: "POST" })
 
 Document (from "${data.label}"):
 """
-${data.content.slice(0, 45000)}
+${data.content.slice(0, 6000)}
 """
 
 Split it into 2 to 6 topic sections based on natural subject-matter boundaries in the material — do not force an arbitrary number, and do not split a document that is really one continuous topic. Each section must:
@@ -231,7 +236,7 @@ Respond with a single JSON object:
 { "seriesTitle": string, "topics": [ { "title": string, "content": string } ] }
 "title" is at most 6 words per topic.`;
 
-    const raw = await groqComplete(apiKey, prompt);
+    const raw = await groqComplete(apiKey, prompt, 3000);
 
     let parsed: { seriesTitle?: string; topics?: { title?: string; content?: string }[] };
     try {
