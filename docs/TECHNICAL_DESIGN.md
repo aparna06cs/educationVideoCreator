@@ -64,7 +64,7 @@ Two different things now both answer to "video," and they matter for different r
 
 | Capability | Provider | Model / endpoint | Key required |
 |---|---|---|---|
-| Scripting | Groq | `llama-3.3-70b-versatile`, `/openai/v1/chat/completions`, `response_format: json_object` | `GROQ_API_KEY` (free) |
+| Scripting | Groq | `openai/gpt-oss-120b`, `/openai/v1/chat/completions`, `response_format: json_object` | `GROQ_API_KEY` (free) |
 | Illustration | Pollinations.ai | `image.pollinations.ai/prompt/{prompt}` | none |
 | Narration | StreamElements | `api.streamelements.com/kappa/v2/speech` (Amazon Polly voices proxied) | none |
 
@@ -127,7 +127,7 @@ Two different things now both answer to "video," and they matter for different r
                        │
                        │ scriptLesson()      ┌────────────────┐
                        ├────────────────────►│ createServerFn │──► Groq chat/completions
-                       │                     │ (json_object)  │    llama-3.3-70b-versatile
+                       │                     │ (json_object)  │    openai/gpt-oss-120b
                        │◄────────────────────│                │◄── LessonScript JSON
                        │                     └────────────────┘
                        │
@@ -200,7 +200,7 @@ scene-count-by-length and audience-tone-contract logic as before. The transport 
 ```ts
 const raw = await groqComplete(apiKey, prompt);
 // POST https://api.groq.com/openai/v1/chat/completions
-// model: "llama-3.3-70b-versatile"
+// model: "openai/gpt-oss-120b"
 // response_format: { type: "json_object" }
 ```
 
