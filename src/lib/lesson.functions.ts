@@ -84,6 +84,13 @@ async function groqComplete(apiKey: string, prompt: string, maxTokens: number): 
         { role: "user", content: prompt },
       ],
       response_format: { type: "json_object" },
+      // gpt-oss-120b is a reasoning model: it spends output tokens on an internal
+      // reasoning trace before the answer. Left unchecked it burns the whole
+      // max_tokens budget reasoning and returns an empty completion, which Groq
+      // rejects as json_validate_failed with failed_generation: "". Keep reasoning
+      // minimal and out of the response so the budget goes to the actual JSON.
+      reasoning_effort: "low",
+      reasoning_format: "hidden",
       temperature: 0.7,
       max_tokens: maxTokens,
     }),
@@ -109,7 +116,7 @@ export const scriptLesson = createServerFn({ method: "POST" })
     const sourceBlock =
       data.sourceKind === "topic"
         ? `The educator gave only a topic: "${data.content}". Build the lesson from well-established knowledge about it.`
-        : `Source material (from "${data.sourceLabel}"):\n"""\n${data.content.slice(0, 5000)}\n"""`;
+        : `Source material (from "${data.sourceLabel}"):\n"""\n${data.content.slice(0, 3500)}\n"""`;
 
     const prompt = `You are a lesson director turning study material into a narrated video lesson.
 
@@ -136,7 +143,7 @@ Stay strictly faithful to the source material. Do not invent facts that contradi
 Respond with a single JSON object matching exactly this schema (no extra keys, no markdown fences):
 ${JSON.stringify(lessonSchema)}`;
 
-    const raw = await groqComplete(apiKey, prompt, 2600);
+    const raw = await groqComplete(apiKey, prompt, 4000);
 
     let parsed: GatewayLesson;
     try {
@@ -195,7 +202,7 @@ Respond with a single JSON object: { "isEducational": boolean, "reason": string 
 "reason" is only needed when isEducational is false — one short sentence, at most 20 words, explaining why. Leave it empty otherwise.`;
 
     try {
-      const raw = await groqComplete(apiKey, prompt, 80);
+      const raw = await groqComplete(apiKey, prompt, 400);
       const parsed = JSON.parse(raw) as { isEducational?: boolean; reason?: string };
       return {
         isEducational: parsed.isEducational !== false,
@@ -222,7 +229,7 @@ export const segmentTopics = createServerFn({ method: "POST" })
 
 Document (from "${data.label}"):
 """
-${data.content.slice(0, 6000)}
+${data.content.slice(0, 4000)}
 """
 
 Split it into 2 to 6 topic sections based on natural subject-matter boundaries in the material — do not force an arbitrary number, and do not split a document that is really one continuous topic. Each section must:
