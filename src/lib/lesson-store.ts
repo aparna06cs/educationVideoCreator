@@ -42,14 +42,22 @@ export const lessonStore = {
   },
   updateScene(id: string, patch: Partial<Scene>) {
     if (!state.lesson) return;
+    const updated = {
+      ...state.lesson,
+      scenes: state.lesson.scenes.map((scene) =>
+        scene.id === id ? { ...scene, ...patch } : scene,
+      ),
+    };
     state = {
       ...state,
-      lesson: {
-        ...state.lesson,
-        scenes: state.lesson.scenes.map((scene) =>
-          scene.id === id ? { ...scene, ...patch } : scene,
-        ),
-      },
+      lesson: updated,
+      // Keep the corresponding entry in `lessons` in sync. Without this, a part
+      // already pushed into `lessons` keeps its pre-asset snapshot (imageUrl and
+      // audioUrl still null) and any reader preferring `lessons` renders a lesson
+      // with no images or audio.
+      lessons: state.lessons.map((lesson) =>
+        lesson.series?.partIndex === updated.series?.partIndex ? updated : lesson,
+      ),
     };
     emit();
   },
