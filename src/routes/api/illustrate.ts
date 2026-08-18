@@ -18,9 +18,10 @@ export const Route = createFileRoute("/api/illustrate")({
           `Wide 16:9 composition, no text, no words, no letters, no numbers, no watermarks, no borders.`;
 
         try {
+          // flux-1-schnell's input schema only accepts `prompt` and `steps` — no
+          // `seed`, unlike Pollinations. Passing one throws a schema-validation 400.
           const result = await runWorkersAi<{ image?: string }>("@cf/black-forest-labs/flux-1-schnell", {
             prompt: fullPrompt.slice(0, MAX_PROMPT_CHARS),
-            seed: Math.floor(Math.random() * 1_000_000),
           });
 
           if (!result.image) return Response.json({ error: "No image returned." }, { status: 502 });
