@@ -74,10 +74,10 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
     message: partLabel ? `Illustrating and narrating ${partLabel}…` : "Illustrating scenes and recording narration…",
   });
 
-  // Pollinations is free and unauthenticated — bursts of concurrent requests from
-  // Cloudflare's shared egress IPs appear to get rate-limited even though a single
-  // isolated request succeeds reliably. Serialize illustration calls to avoid that.
-  const illustrate = mapWithConcurrency(scenes, 1, async (scene) => {
+  // Back to 3 concurrent: the previous serialization worked around Pollinations'
+  // 1-request-per-IP queue, which doesn't apply to Workers AI (authenticated
+  // per-account rather than per shared egress IP).
+  const illustrate = mapWithConcurrency(scenes, 3, async (scene) => {
     try {
       const res = await fetch("/api/illustrate", {
         method: "POST",
@@ -95,9 +95,7 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
     }
   });
 
-  // Same rate-limiting risk as illustration above — StreamElements is also free
-  // and unauthenticated. Serialize these too.
-  const narrate = mapWithConcurrency(scenes, 1, async (scene) => {
+  const narrate = mapWithConcurrency(scenes, 3, async (scene) => {
     try {
       const res = await fetch("/api/narrate", {
         method: "POST",
