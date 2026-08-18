@@ -84,11 +84,15 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: scene.illustration, style: script.artDirection }),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`${res.status}: ${body.slice(0, 300)}`);
+      }
       const data = (await res.json()) as { image?: string };
-      if (!data.image) throw new Error("no image");
+      if (!data.image) throw new Error("Response had no image field.");
       lessonStore.updateScene(scene.id, { imageUrl: data.image, imageStatus: "ready" });
-    } catch {
+    } catch (err) {
+      console.error(`[illustrate] scene "${scene.title}" failed:`, err);
       lessonStore.updateScene(scene.id, { imageStatus: "failed" });
     } finally {
       lessonStore.set({ imagesDone: lessonStore.get().imagesDone + 1 });
@@ -102,12 +106,16 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: scene.narration, voice: options.voice }),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`${res.status}: ${body.slice(0, 300)}`);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const duration = await audioDuration(url);
       lessonStore.updateScene(scene.id, { audioUrl: url, audioStatus: "ready", duration });
-    } catch {
+    } catch (err) {
+      console.error(`[narrate] scene "${scene.title}" failed:`, err);
       lessonStore.updateScene(scene.id, {
         audioStatus: "failed",
         duration: Math.max(5, Math.round(scene.narration.split(/\s+/).length / 2.6)),
@@ -174,6 +182,7 @@ export async function buildLesson(source: LessonSource, options: LessonOptions) 
 
     lessonStore.set({ stage: "ready", message: "Your lessons are ready." });
   } catch (error) {
+    console.error("[buildLesson] failed:", error);
     lessonStore.set({
       stage: "error",
       error: error instanceof Error ? error.message : "Something went wrong while building the lesson.",
