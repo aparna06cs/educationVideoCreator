@@ -127,7 +127,12 @@ async function buildOneLesson(source: LessonSource, options: LessonOptions, seri
 
   await Promise.all([illustrate, narrate]);
 
-  return lesson;
+  // Return the CURRENT store lesson, not the `lesson` local declared above.
+  // updateScene() replaces state.lesson with new objects as each image/audio
+  // asset lands, so the local `lesson` is a stale snapshot with every scene
+  // still imageUrl/audioUrl null. Returning it (and having callers write it
+  // back via lessonStore.set) wiped every generated asset.
+  return lessonStore.get().lesson ?? lesson;
 }
 
 export async function buildLesson(source: LessonSource, options: LessonOptions) {
