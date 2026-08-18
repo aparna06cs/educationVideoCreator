@@ -17,12 +17,17 @@ const MAX_ATTEMPTS = 2;
 
 export type WorkersAiError = { status: number; detail: string };
 
+// Not a secret — the account ID appears in every dash.cloudflare.com URL. It's
+// hardcoded as a last-resort fallback because this deployment has repeatedly lost
+// dashboard-set *plaintext* variables across builds (same reason the Supabase
+// publishable values are inlined in integrations/supabase/client.ts). Secrets, by
+// contrast, have survived, so CF_AI_TOKEN below stays required.
+const FALLBACK_ACCOUNT_ID = "7464a281d8a2386bf981286c184573e0";
+
 function accountId(): string {
   // R2_ACCOUNT_ID is the same Cloudflare account, so reuse it when a dedicated
   // CF_ACCOUNT_ID isn't set.
-  const id = process.env["CF_ACCOUNT_ID"] || process.env["R2_ACCOUNT_ID"];
-  if (!id) throw new Error("Missing CF_ACCOUNT_ID (or R2_ACCOUNT_ID) for Workers AI.");
-  return id;
+  return process.env["CF_ACCOUNT_ID"] || process.env["R2_ACCOUNT_ID"] || FALLBACK_ACCOUNT_ID;
 }
 
 function apiToken(): string {
